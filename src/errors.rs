@@ -2,14 +2,14 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::io;
 use std::str;
-use rustc_serialize::json;
+
+use serde_json;
 
 #[derive(Debug)]
 pub enum BodyErrorCause {
     Utf8Error(str::Utf8Error),
     IoError(io::Error),
-    ParserError(json::ParserError),
-    DecoderError(json::DecoderError)
+    JsonError(serde_json::Error),
 }
 
 #[derive(Debug)]
@@ -21,6 +21,16 @@ pub struct BodyError {
 impl StdError for BodyError {
     fn description(&self) -> &str {
         &self.detail[..]
+    }
+
+    fn cause(&self) -> Option<&StdError> {
+        use BodyErrorCause::*;
+
+        match self.cause {
+            Utf8Error(ref err) => Some(err),
+            IoError(ref err) => Some(err),
+            JsonError(ref err) => Some(err),
+        }
     }
 }
 
